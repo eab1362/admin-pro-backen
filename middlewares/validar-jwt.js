@@ -19,7 +19,7 @@ const validarJWT = (req, res = response, next) => {
     try {
         const { uid } = jwt.verify(token, process.env.JWT_SECRET)
 
-        console.log(uid)
+
         req.uid = uid;
         // siempre se tiene que llamar el next al terminar el middleware o si no 
         // la peticion no carga

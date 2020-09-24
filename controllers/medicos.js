@@ -9,38 +9,21 @@ const { generarJWT } = require('../helpers/jwt');
 //la contraseña en la base de datos para que no sea vulnerable  bcryptjs
 const bcrypt = require('bcryptjs');
 
-const Usuario = require('../models/usuario');
+const Medico = require('../models/medico');
 
-const getUsuarios = async (req, res) => {
+const getMedicos = async (req, res = response) => {
 
-    // query params
-    const desde = Number(req.query.desde) || 0;
-    const hasta = Number(req.query.hasta);
-
-    // para optiumizar tiempos en los awaits y estos se realicen de manera simultanea
-    // se usa promise all en el cual se le indica las funsiones  asincronas
-    //que va a realizar de forma simultanea y returna estos dos valores es un arreglo destruturado
-  const[usuarios, total] =  await Promise.all([
-// retorna de la DB todos los usuarios con {} se indica la creacion de un filtro y se ecoje
+    // retorna de la DB todos los usuarios con {} se indica la creacion de un filtro y se ecoje
     //las propiedades que requiere
-     Usuario.find({}, 'nombre email role google img ')
-    //desde que registro los quiere obtener
-    .skip(desde)
-    // cuantos registros va a obtener este  get max 5
-    .limit(5),
+    const medicos = await Medico.find().populate('usuario', 'nombre').populate('hospital', 'nombre');
 
-    Usuario.countDocuments()
-    ]);
-    
     res.json({
-        total,
         ok: true,
-        usuarios,
-        uid: req.uid,
+        medicos
     })
 }
 
-const eliminarUsuario = async (req, res = response) => {
+const eliminarMedico = async (req, res = response) => {
 
     const uid = req.params.id;
 
@@ -73,7 +56,7 @@ const eliminarUsuario = async (req, res = response) => {
 }
 
 
-const actualizarUsuario = async (req, res = response) => {
+const actualizarMedico = async (req, res = response) => {
 
     const uid = req.params.id;
 
@@ -130,41 +113,19 @@ const actualizarUsuario = async (req, res = response) => {
 
 // post, se indica que es asincrono
 //se tipa la respuesta de la forma de response
-const crearUsuario = async (req, res = response) => {
+const crearMedico = async (req, res = response) => {
 
-    const { email, password, nombre } = req.body;
+    const medico = new Medico({ ...req.body, usuario: req.uid });
 
 
     try {
 
-
-        // promesa para guardar en la base de datos
-        const existeEmail = await Usuario.findOne({ email })
-        console.log(existeEmail)
-        if (existeEmail) {
-
-            return res.status(400).json({
-                ok: false,
-                msg: 'El correo ya esta registrado'
-            });
-        }
-
-        const usuario = new Usuario(req.body);
-
-        //Encriptar Contraseña
-        const salt = bcrypt.genSaltSync();
-        usuario.password = bcrypt.hashSync(password, salt);
-
-        // guardar usuario
-        await usuario.save();
-
-        const token = await generarJWT(usuario.id)
+        const medicoDB = await medico.save();
         res.json({
             ok: true,
-            usuario,
-            token
-
+            medicoDB
         })
+
 
     } catch (error) {
         console.log("error ", error)
@@ -178,4 +139,4 @@ const crearUsuario = async (req, res = response) => {
 
 
 }
-module.exports = { getUsuarios, crearUsuario, actualizarUsuario, eliminarUsuario }
+module.exports = { getMedicos, crearMedico, actualizarMedico, eliminarMedico }
