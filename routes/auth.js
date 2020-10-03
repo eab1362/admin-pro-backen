@@ -5,7 +5,7 @@ ruta: /api/login
 
 // para poder crear las rutas  de la api
 const { Router } = require('express')
-const {login} = require('../controllers/auth');
+const {login, googleSignIn} = require('../controllers/auth');
 const {validarCampos} = require('../middlewares/validar-campos');
 // para crear validadores en los metodos de la api para que la informacion este completa y correcta
 const { check } = require('express-validator')
@@ -26,4 +26,13 @@ router.post('/',
 login
 )
 
+
+router.post('/google', 
+[
+    check('token', 'el token de google es obligastorio').not().isEmpty(),
+
+    validarCampos
+],
+googleSignIn
+)
 module.exports = router;

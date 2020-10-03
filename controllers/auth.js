@@ -1,4 +1,5 @@
 const { response } = require('express');
+const { googleVerify } = require('../helpers/googleVerify')
 
 
 // esta referencia del modelo ayuda a saber que campos tiene 
@@ -7,15 +8,16 @@ const Usuario = require('../models/usuario');
 //la contraseña en la base de datos para que no sea vulnerable  bcryptjs
 const bcrypt = require('bcryptjs');
 const { generarJWT } = require('../helpers/jwt');
+const usuarios = require('./usuarios');
 
 const login = async (req, res = response) => {
 
-    const {email, password} = req.body;
+    const { email, password } = req.body;
     try {
 
-        const usuarioDB = await Usuario.findOne({email});
-        
-        if(!usuarioDB){
+        const usuarioDB = await Usuario.findOne({ email });
+
+        if (!usuarioDB) {
             return res.status(404).json({
                 ok: false,
                 msg: "email no valido"
@@ -24,7 +26,7 @@ const login = async (req, res = response) => {
         // verificar contraseña
         const validPassword = bcrypt.compareSync(password, usuarioDB.password)
 
-        if(!validPassword){
+        if (!validPassword) {
             return res.status(404).json({
                 ok: false,
                 msg: "contraseña no valida"
@@ -49,6 +51,51 @@ const login = async (req, res = response) => {
 
 }
 
+const googleSignIn = async (req, res = response) => {
+
+    try {
+
+        const googleToken = req.body.token;
+        const { name, email, picture } = await googleVerify(googleToken);
+
+        const usuarioDB = await Usuario.findOne({ email })
+        let usuario;
+        if (!usuarioDB) {
+            usuario = new Usuario({
+                nombre: name,
+                email,
+                password: '@@@',
+                img: picture,
+                google: true
+
+            });
+        } else {
+            usuario = usuarioDB;
+            usuario.google = true;
+            usuario.password = '@@@';
+        }
+
+        await usuario.save();
+
+        // genera el token - JWT
+        const token = await generarJWT(usuarioDB.id)
+
+
+        res.json({
+            ok: true,            
+            token
+        })
+
+    } catch (error) {
+        res.status(400).json({
+            ok: false,
+            msg: "error inesperado, token incorrecto"
+        })
+
+    }
+}
+
 module.exports = {
-    login
+    login,
+    googleSignIn
 }
