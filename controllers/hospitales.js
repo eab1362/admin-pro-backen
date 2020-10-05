@@ -11,9 +11,10 @@ const bcrypt = require('bcryptjs');
 
 
 const Hospital = require('../models/hospital');
+const usuario = require('../models/usuario');
 
 
-const getHospitales = async (req, res= response) => {
+const getHospitales = async (req, res = response) => {
 
     // retorna de la DB todos los usuarios con {} se indica la creacion de un filtro y se ecoje
     //las propiedades que requiere
@@ -24,7 +25,7 @@ const getHospitales = async (req, res= response) => {
     // y en el segundo argumento se indica que se quire obtener de esta
     // todo esto concatenado con una funcion para coinsultar en MongoDB 
     // en ester caso Mongo
-   const hospitales = await Hospital.find().populate('usuario', 'nombre email')
+    const hospitales = await Hospital.find().populate('usuario', 'nombre email')
 
     res.json({
         ok: true,
@@ -34,26 +35,26 @@ const getHospitales = async (req, res= response) => {
 
 const eliminarHospital = async (req, res = response) => {
 
-    const uid = req.params.id;
+    const id = req.params.id;
 
     try {
 
-        const usuarioExiste = Usuario.findById(uid);
+        const hospitalExiste = Hospital.findById(id);
 
-        if(!usuarioExiste){
+        if (!hospitalExiste) {
             return res.status(400).json({
                 ok: false,
-                msg:"No existe un usuario con ese id"
+                msg: "No existe un hospital con ese id"
             })
         }
 
-      await  Usuario.findByIdAndDelete(uid);
+        await Hospital.findByIdAndDelete(id);
 
         res.json({
             ok: true,
-            msg: 'usuario eliminado'
+            msg: 'Hospital eliminado'
         })
-        
+
     } catch (error) {
         console.log(error)
         res.status(400).json({
@@ -67,16 +68,18 @@ const eliminarHospital = async (req, res = response) => {
 
 const actualizarHospital = async (req, res = response) => {
 
-    const uid = req.params.id;
+    const id = req.params.id;
+    // se tiene el uid de usuario gracias a que se pasa por la autenticacion del jwt
+    const uid = req.uid;
 
     try {
         // con moongose se busca un usuario con el id que esta en el put
-        const usuarioDB = await Usuario.findById(uid);
+        const hospital = await Hospital.findById(id);
 
-        if (!usuarioDB) {
+        if (!hospital) {
             return res.status(404).json({
                 ok: false,
-                msg: "no existe un usuario con ese id"
+                msg: "no existe un hospital con ese id"
             })
 
         }
@@ -84,28 +87,17 @@ const actualizarHospital = async (req, res = response) => {
         //actualizaicion
         // se extra el password y google de los campos
         // y los demas camp0os se ingresan en la variable campos
-        const {pasword, google, email, ...campos} = req.body;
-
-        if (usuarioDB.email !== req.body.email) {
-     
-            const existeEmail = await Usuario.findOne({email});
-            if(existeEmail)
-            {
-                return res.status(400).json({
-                    ok: false,
-                    msg: 'Ya existe un usuario con ese Email'
-                })
-            }
-
+        const cambiosHosdpital = {
+            ...req.body,
+            usuario: uid
         }
-        campos.email = email;   
         // metodo de mongoose para actulizar un campo de la db con el id        
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(uid, campos, {new: true});
+        const hospitalActualizado = await Hospital.findByIdAndUpdate(id, cambiosHosdpital, { new: true });
 
 
         res.json({
             ok: true,
-            usuario: usuarioActualizado
+            hospital: hospitalActualizado
         })
 
     } catch (error) {
@@ -125,15 +117,15 @@ const actualizarHospital = async (req, res = response) => {
 //se tipa la respuesta de la forma de response
 const crearHospital = async (req, res = response) => {
 
-    
+
     const uid = req.uid;
     const hospital = new Hospital({
-        ...req.body, 
+        ...req.body,
         usuario: uid
     });
     try {
 
-       const hospitalDB =await hospital.save();
+        const hospitalDB = await hospital.save();
         // const token = await generarJWT(usuario.id)
         res.json({
             ok: true,

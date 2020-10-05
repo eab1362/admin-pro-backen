@@ -25,24 +25,24 @@ const getMedicos = async (req, res = response) => {
 
 const eliminarMedico = async (req, res = response) => {
 
-    const uid = req.params.id;
+    const id = req.params.id;
 
     try {
 
-        const usuarioExiste = Usuario.findById(uid);
+        const medico = Medico.findById(id);
 
-        if (!usuarioExiste) {
+        if (!medico) {
             return res.status(400).json({
                 ok: false,
-                msg: "No existe un usuario con ese id"
+                msg: "No existe un medico con ese id"
             })
         }
 
-        await Usuario.findByIdAndDelete(uid);
+        await Medico.findByIdAndDelete(id);
 
         res.json({
             ok: true,
-            msg: 'usuario eliminado'
+            msg: 'medico eliminado'
         })
 
     } catch (error) {
@@ -58,44 +58,34 @@ const eliminarMedico = async (req, res = response) => {
 
 const actualizarMedico = async (req, res = response) => {
 
-    const uid = req.params.id;
+    const id = req.params.id;
+    const uid = req.uid;
 
     try {
         // con moongose se busca un usuario con el id que esta en el put
-        const usuarioDB = await Usuario.findById(uid);
+        const medico = await Medico.findById(id);
 
-        if (!usuarioDB) {
+        if (!medico) {
             return res.status(404).json({
                 ok: false,
-                msg: "no existe un usuario con ese id"
+                msg: "no existe un medico con ese id"
             })
 
         }
 
-        //actualizaicion
-        // se extra el password y google de los campos
-        // y los demas camp0os se ingresan en la variable campos
-        const { pasword, google, email, ...campos } = req.body;
-
-        if (usuarioDB.email !== req.body.email) {
-
-            const existeEmail = await Usuario.findOne({ email });
-            if (existeEmail) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: 'Ya existe un usuario con ese Email'
-                })
-            }
-
+        const cambiosMedico = {
+            ...req.body,
+            usuario: uid
         }
-        campos.email = email;
+
+
         // metodo de mongoose para actulizar un campo de la db con el id        
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(uid, campos, { new: true });
+        const medicoActualizado = await Medico.findByIdAndUpdate(id, cambiosMedico, { new: true });
 
 
         res.json({
             ok: true,
-            usuario: usuarioActualizado
+            medico: medicoActualizado
         })
 
     } catch (error) {

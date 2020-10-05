@@ -11,6 +11,7 @@ const {validarCampos} = require('../middlewares/validar-campos')
 const {validarJWT} = require('../middlewares/validar-jwt')
 
 const  { getMedicos, crearMedico, actualizarMedico, eliminarMedico } = require('../controllers/Medicos')
+const validarJwt = require('../middlewares/validar-jwt')
 
 // funcion de router express
 const router = Router();
@@ -20,10 +21,15 @@ const router = Router();
 router.get('/' , getMedicos)
 
 
-router.delete('/:id', eliminarMedico)
+
+router.delete('/:id', validarJWT, eliminarMedico)
 
 router.put('/:id', 
 [
+    validarJWT,
+    check('hospital','el id del hospital debe ser valido').isMongoId(),
+    check('nombre','el nombre del medico es requerido').not().isEmpty(),
+    validarCampos,
 ],actualizarMedico)
 
 // al post se crea un middleware para validar quer la informacion del body sea correcta
